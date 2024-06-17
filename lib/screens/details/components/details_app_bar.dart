@@ -2,18 +2,26 @@ import 'package:flutter/material.dart';
 import 'package:domian/constants/constants.dart';
 
 import 'package:domian/model/object.dart';
+import 'package:hive/hive.dart';
 
 class CustomAppBar extends StatefulWidget {
-  final Object object;
-
   const CustomAppBar({super.key, required this.object});
+
+  final Object object;
 
   @override
   _CustomAppBarState createState() => _CustomAppBarState();
 }
 
 class _CustomAppBarState extends State<CustomAppBar> {
-  bool isFav = false;
+  late Box favoriteObjectBox;
+
+  @override
+  void initState() {
+    super.initState();
+
+    favoriteObjectBox = Hive.box('favorites');
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -32,7 +40,7 @@ class _CustomAppBarState extends State<CustomAppBar> {
           children: [
             InkWell(
               onTap: (){
-                Navigator.pop(context);
+                Navigator.pushNamed(context, '/');
               },
               child: Container(
                 height: 50,
@@ -54,7 +62,7 @@ class _CustomAppBarState extends State<CustomAppBar> {
                   borderRadius: BorderRadius.circular(15)
               ),
               child: IconButton(
-                icon: isFav
+                icon: favoriteObjectBox.containsKey(widget.object.id)
                     ? const Icon(
                   Icons.favorite_rounded,
                   color: cdomian,
@@ -65,7 +73,13 @@ class _CustomAppBarState extends State<CustomAppBar> {
                 ),
                 onPressed: () {
                   setState(() {
-                    isFav = !isFav;
+                    if (favoriteObjectBox.containsKey(widget.object.id)) {
+                      favoriteObjectBox.delete(widget.object.id);
+                    } else {
+                      favoriteObjectBox.put(widget.object.id, true);
+                    }
+
+                    setState((){});
                   });
                 },
               ),
