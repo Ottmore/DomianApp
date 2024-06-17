@@ -1,5 +1,11 @@
+import 'dart:convert';
+import 'dart:io';
+import 'package:crypto/crypto.dart';
 import 'package:domian/constants/constants.dart';
+import 'package:domian/services/user_service.dart';
 import 'package:flutter/material.dart';
+import 'package:hive/hive.dart';
+import 'package:image_picker/image_picker.dart';
 
 class UserSettingsScreen extends StatefulWidget {
   const UserSettingsScreen({super.key});
@@ -10,27 +16,93 @@ class UserSettingsScreen extends StatefulWidget {
 
 class _UserSettingsScreenState extends State<UserSettingsScreen> {
   final _formKey = GlobalKey<FormState>();
-  final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  final TextEditingController _lastNameController = TextEditingController();
-  final TextEditingController _firstNameController = TextEditingController();
-  final TextEditingController _phoneNumberController = TextEditingController();
-  final TextEditingController _dateOfBirthController = TextEditingController();
-  String _profileImage = "profile_image_placeholder.png";
+  late TextEditingController _emailController;
+  late TextEditingController _lastNameController;
+  late TextEditingController _firstNameController;
+  late TextEditingController _phoneNumberController;
+  late TextEditingController _dateOfBirthController;
+  late ImageProvider<Object> _profileImage;
 
-  void _updateProfileImage() {
-    print('Update Profile Image');
+  XFile? _uploadedImage;
+
+  late Box userBox;
+  late Box userProfileBox;
+
+  late Map<dynamic, dynamic> user;
+  late Map<dynamic, dynamic> userProfile;
+
+  bool _isLoading = true;
+
+  Future<void> _updateProfileImage() async {
+    final ImagePicker picker = ImagePicker();
+    final img = await picker.pickImage(source: ImageSource.gallery);
+    setState(() {
+      _profileImage = img?.path != null
+          ? FileImage(File(img!.path)) as ImageProvider
+          : AssetImage('assets/user/${userProfile['profile_image']}') as ImageProvider;
+
+      _uploadedImage = img;
+    });
   }
 
   void _saveSettings() {
     if (_formKey.currentState!.validate()) {
-      print('Email: ${_emailController.text}');
-      print('Password: ${_passwordController.text}');
-      print('Last Name: ${_lastNameController.text}');
-      print('First Name: ${_firstNameController.text}');
-      print('Phone Number: ${_phoneNumberController.text}');
-      print('Date of Birth: ${_dateOfBirthController.text}');
+      String password = _passwordController.text;
+      var bytes = utf8.encode(password);
+      var hashedPassword = sha256.convert(bytes).toString();
+
+      if (_uploadedImage != null) {
+        UserService().saveImage(_uploadedImage!.path, _uploadedImage!.name, user['id'].toString());
+      }
+
+      UserService().saveProfile(
+          _emailController.text,
+          hashedPassword,
+          _lastNameController.text,
+          _firstNameController.text,
+          _phoneNumberController.text,
+          _dateOfBirthController.text,
+          _uploadedImage?.name ?? userProfile['profile_image']
+      );
+
+      Navigator.pushNamed(context, '/user-profile');
     }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+
+    userBox = Hive.box('user');
+    userProfileBox = Hive.box('user_profile');
+
+    if (userProfileBox.length > 0) {
+      user = userBox.getAt(0);
+      userProfile = userProfileBox.getAt(0);
+    }
+
+    _emailController = TextEditingController(text: user['email']);
+    _lastNameController = TextEditingController(text: userProfile['last_name']);
+    _firstNameController = TextEditingController(text: userProfile['first_name']);
+    _phoneNumberController = TextEditingController(text: userProfile['phone_number']);
+    _dateOfBirthController = TextEditingController(text: userProfile['date_of_birth']);
+
+    _loadData();
+  }
+
+  _loadData() async {
+    if (userProfile['profile_image'] == 'profile_image_placeholder.png') {
+      _profileImage = AssetImage('assets/user/${userProfile['profile_image']}');
+    } else {
+      final image = await UserService().getRemoteImage(user['id'], userProfile['profile_image']);
+
+      _profileImage = MemoryImage(image);
+    }
+
+    setState(() {
+      _isLoading = false;
+    });
   }
 
   @override
@@ -48,14 +120,16 @@ class _UserSettingsScreenState extends State<UserSettingsScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Center(
-                child: GestureDetector(
+                child: _isLoading == false
+                    ? GestureDetector(
                   onTap: _updateProfileImage,
                   child: CircleAvatar(
-                    radius: 60,
-                    backgroundImage: AssetImage('assets/user/$_profileImage'),
+                    radius: 80,
+                    backgroundImage: _profileImage,
                     backgroundColor: Colors.redAccent,
                   ),
-                ),
+                )
+                    : const CircularProgressIndicator(),
               ),
               SizedBox(height: 16),
               TextFormField(
@@ -199,7 +273,7 @@ class _UserSettingsScreenState extends State<UserSettingsScreen> {
                   if (value == null || value.isEmpty) {
                     return 'Пожалуйста, введите вашу дату рождения';
                   }
-                  if (!RegExp(r'^\d{2}/\d{2}/\d{4}$').hasMatch(value)) {
+                  if (!RegExp(r'^\d{2}.\d{2}.\d{4}$').hasMatch(value)) {
                     return 'Пожалуйста, введите дату рождения в формате ДД/ММ/ГГГГ';
                   }
                   return null;
@@ -229,4 +303,3 @@ class _UserSettingsScreenState extends State<UserSettingsScreen> {
     );
   }
 }
-
