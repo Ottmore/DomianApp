@@ -1,5 +1,7 @@
 import 'package:domian/constants/constants.dart';
+import 'package:domian/model/review.dart';
 import 'package:flutter/material.dart';
+import 'package:hive/hive.dart';
 
 class ReviewsScreen extends StatefulWidget {
   const ReviewsScreen({super.key});
@@ -9,22 +11,31 @@ class ReviewsScreen extends StatefulWidget {
 }
 
 class _ReviewsScreenState extends State<ReviewsScreen> {
-  final List<Map<String, dynamic>> _reviews = [
-    {
-      'name': 'Алексей Петров',
-      'review': 'Отличный агенство! Очень доволен их работой.',
-      'rating': 5,
-    },
-    {
-      'name': 'Мария Иванова',
-      'review': 'Хорошее агенство, но мало объектов подходящих под мои критерии.',
-      'rating': 4,
-    },
-  ];
+  bool _isLoading = true;
 
-  void _addReview(String name, String review, int rating) {
+  List<Review> listReviews = [];
+
+  late Box userBox;
+  late Box userProfileBox;
+
+  late Map<dynamic, dynamic> user;
+  late Map<dynamic, dynamic> userProfile;
+
+  void _addReview(String review, int rating) {
+    Map<String, dynamic> reviewMap = {
+      'user_id': user['id'].toString(),
+      'text': review,
+      'rating': rating.toString(),
+      'created_at': DateTime.now().toString(),
+      'updated_at': DateTime.now().toString(),
+      'first_name': userProfile['first_name'],
+      'last_name': userProfile['last_name'],
+    };
+
+    ReviewModel().create(Review.fromMap(reviewMap));
+
     setState(() {
-      _reviews.add({'name': name, 'review': review, 'rating': rating});
+      listReviews.add(Review.fromMap(reviewMap));
     });
   }
 
@@ -38,31 +49,67 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
   }
 
   @override
+  void initState() {
+    super.initState();
+
+    userBox = Hive.box('user');
+    userProfileBox = Hive.box('user_profile');
+
+    if (userProfileBox.length > 0) {
+      user = userBox.getAt(0);
+      userProfile = userProfileBox.getAt(0);
+    }
+
+    _loadData();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Отзывы'),
+        title: const Text('Отзывы', style: TextStyle(color: Colors.black)),
         backgroundColor: Colors.white,
+        iconTheme: IconThemeData(color: Colors.black),
       ),
-      body: Padding(
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
             Expanded(
               child: ListView.builder(
-                itemCount: _reviews.length,
+                itemCount: listReviews.length,
                 itemBuilder: (context, index) {
-                  final review = _reviews[index];
+                  final review = listReviews[index];
+                  final userName = '${review.first_name} ${review.last_name}';
+
                   return Card(
                     margin: const EdgeInsets.symmetric(vertical: 8),
+                    elevation: 4,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
                     child: ListTile(
-                      title: Text(review['name']),
-                      subtitle: Text(review['review']),
+                      title: Text(
+                        userName,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                      subtitle: Text(
+                        review.text ?? "",
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: Colors.black87,
+                        ),
+                      ),
                       trailing: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: List.generate(5, (i) {
                           return Icon(
-                            i < review['rating'] ? Icons.star : Icons.star_border,
+                            i < review.rating ? Icons.star : Icons.star_border,
                             color: Colors.amber,
                           );
                         }),
@@ -72,7 +119,7 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
                 },
               ),
             ),
-            SizedBox(height: 16),
+            const SizedBox(height: 16),
             ElevatedButton.icon(
               onPressed: _showAddReviewDialog,
               style: ElevatedButton.styleFrom(
@@ -80,10 +127,10 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
-                padding: EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+                padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
                 elevation: 5,
               ),
-              icon: Icon(Icons.add, color: Colors.white),
+              icon: const Icon(Icons.add, color: Colors.white),
               label: const Text(
                 'Добавить отзыв',
                 style: TextStyle(fontSize: 16, color: Colors.white),
@@ -94,10 +141,19 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
       ),
     );
   }
+
+  _loadData() async {
+    List<Review> dataReviews = await ReviewModel().getAll();
+
+    setState(() {
+      listReviews = dataReviews;
+      _isLoading = false;
+    });
+  }
 }
 
 class AddReviewDialog extends StatefulWidget {
-  final Function(String, String, int) onSubmit;
+  final Function(String, int) onSubmit;
 
   const AddReviewDialog({super.key, required this.onSubmit});
 
@@ -107,32 +163,23 @@ class AddReviewDialog extends StatefulWidget {
 
 class _AddReviewDialogState extends State<AddReviewDialog> {
   final _formKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController();
   final _reviewController = TextEditingController();
   int _rating = 1;
 
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text('Добавить отзыв'),
+      title: const Text('Добавить отзыв'),
       content: Form(
         key: _formKey,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             TextFormField(
-              controller: _nameController,
-              decoration: InputDecoration(labelText: 'Имя'),
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Пожалуйста, введите ваше имя';
-                }
-                return null;
-              },
-            ),
-            TextFormField(
               controller: _reviewController,
-              decoration: InputDecoration(labelText: 'Отзыв'),
+              decoration: const InputDecoration(
+                labelText: 'Отзыв'
+              ),
               validator: (value) {
                 if (value == null || value.isEmpty) {
                   return 'Пожалуйста, введите ваш отзыв';
@@ -140,8 +187,8 @@ class _AddReviewDialogState extends State<AddReviewDialog> {
                 return null;
               },
             ),
-            SizedBox(height: 16),
-            Text('Оценка'),
+            const SizedBox(height: 16),
+            const Text('Оценка'),
             DropdownButtonFormField<int>(
               value: _rating,
               onChanged: (value) {
@@ -164,20 +211,19 @@ class _AddReviewDialogState extends State<AddReviewDialog> {
           onPressed: () {
             if (_formKey.currentState!.validate()) {
               widget.onSubmit(
-                _nameController.text,
                 _reviewController.text,
                 _rating,
               );
               Navigator.of(context).pop();
             }
           },
-          child: Text('Добавить'),
+          child: const Text('Добавить'),
         ),
         TextButton(
           onPressed: () {
             Navigator.of(context).pop();
           },
-          child: Text('Отмена'),
+          child: const Text('Отмена'),
         ),
       ],
     );
