@@ -1,20 +1,37 @@
 import 'package:flutter/material.dart';
 import 'package:domian/constants/constants.dart';
-import 'package:domian/data/data.dart';
 
 class Categories extends StatefulWidget {
+  const Categories({super.key, required this.updateCategory});
+
+  final Function updateCategory;
+
   @override
   _CategoriesState createState() => _CategoriesState();
 }
 
 class _CategoriesState extends State<Categories> {
-  int selectedCategoryIndex = 0;
+  int selectedCategoryIndex = -1;
+
+  List<String> categoryList = [
+    '<4000000\₽',
+    'Продается',
+    '<3 Комнат',
+    'Гараж'
+  ];
 
   Widget _buildCategory(BuildContext context, int index) {
     return GestureDetector(
       onTap: () {
         setState(() {
+          if (selectedCategoryIndex == index) {
+            selectedCategoryIndex = -1;
+            widget.updateCategory("");
+            return;
+          }
+
           selectedCategoryIndex = index;
+          widget.updateCategory(categoryList[index]);
         });
       },
       child: Padding(
