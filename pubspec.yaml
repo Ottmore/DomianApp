@@ -1,0 +1,42 @@
+name: domian
+description: A new Flutter project.
+
+publish_to:
+
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.1.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  another_carousel_pro: ^1.0.2
+  flutter_svg: ^2.0.8
+  mysql_client: ^0.0.27
+  hive: ^2.2.3
+  hive_flutter: ^1.1.0
+  hive_generator: ^2.0.1
+  build_runner: ^2.4.10
+  flutter_dotenv: ^5.1.0
+  dartssh2: ^2.8.2
+  image_picker: ^1.1.1
+  url_launcher: ^6.1.2
+  crypto: ^3.0.3
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+
+  flutter_lints: ^2.0.0
+
+
+
+
+flutter:
+  assets:
+    - assets/images/
+    - assets/user/
+    - .env
+  uses-material-design: true
+
