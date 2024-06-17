@@ -284,7 +284,7 @@ class _HouseDetailsState extends State<HouseDetails> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Text(
-                          '${widget.objectProperties.garages ? 'Да' : 'Нет'}',
+                          '${widget.objectProperties.garage ? 'Да' : 'Нет'}',
                           style: const TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
@@ -588,7 +588,7 @@ class _HouseDetailsState extends State<HouseDetails> {
                       ),
                     ),
                     Text(
-                      'Есть ли балкон или лоджия? : ${widget.objectProperties.balcony_or_loggia} ',
+                      'Балкон/лоджия? : ${widget.objectProperties.balcony_or_loggia} ',
                       style: const TextStyle(
                         fontSize: 17,
                         color: Colors.black,
