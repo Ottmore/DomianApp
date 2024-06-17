@@ -34,7 +34,10 @@ class _DetailsScreenState extends State<DetailsScreen> {
             children: [
               Stack(
                 children: [
-                  CarouselImages(widget.object.more_img),
+                  CarouselImages(
+                      objectId: widget.object.id!,
+                      imagesListUrl: widget.object.more_img
+                  ),
                   CustomAppBar(object: widget.object),
                 ],
               ),
@@ -42,7 +45,9 @@ class _DetailsScreenState extends State<DetailsScreen> {
                   widget.object, widget.objectProperties, widget.address),
             ],
           ),
-          BottomButtons(),
+          BottomButtons(
+            object: widget.object,
+          ),
         ],
       ),
     );
