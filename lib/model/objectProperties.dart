@@ -1,3 +1,4 @@
+import 'package:domian/database/db_provider.dart';
 import 'base_model.dart';
 
 class ObjectProperties {
@@ -19,7 +20,7 @@ class ObjectProperties {
   String? renovation;
   int? elevators;
   bool new_building;
-  bool garages;
+  bool garage;
 
   ObjectProperties({
     this.object_id,
@@ -40,7 +41,7 @@ class ObjectProperties {
     this.renovation,
     this.elevators,
     required this.new_building,
-    required this.garages
+    required this.garage
   });
 
   factory ObjectProperties.fromMap(Map<String, dynamic> data) {
@@ -63,7 +64,7 @@ class ObjectProperties {
       renovation: data['renovation'],
       elevators: int.parse(data['elevators']),
       new_building: data['new_building'] == 1 ? true : false,
-      garages: data['garages'] == 1 ? true : false,
+      garage: int.parse(data['garage']) == 1 ? true : false,
     );
   }
 
@@ -87,7 +88,7 @@ class ObjectProperties {
       'renovation': renovation,
       'elevators': elevators,
       'new_building': new_building,
-      'garages': garages,
+      'garage': garage,
     };
   }
 }
@@ -105,6 +106,21 @@ class ObjectPropertiesModel extends BaseModel {
     }
   }
 
+  getByIds(List<int> ids) async {
+    final conn = await DBProvider.db.database;
+
+    var data = await conn?.execute('SELECT * FROM `$table` WHERE object_id IN (${ids.join(',')})');
+    List<ObjectProperties> objectProperties = [];
+
+    if (data!.numOfRows > 0) {
+      for (var objectProperty in data.rows) {
+        objectProperties.add(ObjectProperties.fromMap(objectProperty.assoc()));
+      }
+    }
+
+    return objectProperties;
+  }
+
   @override
   getAll() async {
     var data = await super.getAll();
@@ -118,4 +134,13 @@ class ObjectPropertiesModel extends BaseModel {
 
     return objectProperties;
   }
+
+  create(ObjectProperties objectProperties) async {
+    final conn = await DBProvider.db.database;
+
+    var objectPropertiesMap = objectProperties.toMap();
+
+    await conn?.execute("INSERT INTO `$table` (object_id,room,floor,total_floor,floor_in_object,area,room_area,living_area,kitchen_area,balcony_or_loggia,bathrooms,toilet,heating,layout,window_view,renovation,elevators,new_building,garage) VALUES ('${objectPropertiesMap['object_id']}','${objectPropertiesMap['room']}','${objectPropertiesMap['floor']}','${objectPropertiesMap['total_floor']}','${objectPropertiesMap['floor_in_object']}','${objectPropertiesMap['area']}','${objectPropertiesMap['room_area']}','${objectPropertiesMap['living_area']}','${objectPropertiesMap['kitchen_area']}','${objectPropertiesMap['balcony_or_loggia']}','${objectPropertiesMap['bathrooms']}','${objectPropertiesMap['toilet']}','${objectPropertiesMap['heating']}','${objectPropertiesMap['layout']}','${objectPropertiesMap['window_view']}','${objectPropertiesMap['renovation']}','${objectPropertiesMap['elevators']}','${objectPropertiesMap['new_building']}','${objectPropertiesMap['garage']}')");
+  }
+
 }
