@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:domian/database/db_provider.dart';
 import 'base_model.dart';
 
 class Object {
@@ -40,7 +41,7 @@ class Object {
       description: data['description'],
       object_type: data['object_type'],
       building_type: data['building_type'],
-      forSale: data['forSale'] == 1 ? true : false,
+      forSale: int.parse(data['forSale']) == 1 ? true : false,
       main_img: data['main_img'],
       more_img: data['more_img'] == null ? [] : json.decode(data['more_img']).cast<String>().toList(),
       created_at: DateTime.parse(data['created_at']),
@@ -79,6 +80,21 @@ class ObjectModel extends BaseModel {
     }
   }
 
+  getByIds(List<int> ids) async {
+    final conn = await DBProvider.db.database;
+
+    var data = await conn?.execute('SELECT * FROM `$table` WHERE id IN (${ids.join(',')})');
+    List<Object> objects = [];
+
+    if (data!.numOfRows > 0) {
+      for (var object in data.rows) {
+        objects.add(Object.fromMap(object.assoc()));
+      }
+    }
+
+    return objects;
+  }
+
   @override
   getAll() async {
     var data = await super.getAll();
@@ -91,5 +107,40 @@ class ObjectModel extends BaseModel {
     }
 
     return objects;
+  }
+
+  getByCity(String city) async {
+    final conn = await DBProvider.db.database;
+
+    var data = await conn?.execute('SELECT `$table`.id, `$table`.user_id, `$table`.address_id, `$table`.cost, `$table`.description, `$table`.object_type, `$table`.building_type, `$table`.forSale, `$table`.main_img, `$table`.more_img, `$table`.created_at, `$table`.updated_at FROM `$table` INNER JOIN `address` ON `$table`.address_id=`address`.id WHERE `address`.city="$city"');
+    List<Object> objects = [];
+
+    if (data!.numOfRows > 0) {
+      for (var object in data.rows) {
+        objects.add(Object.fromMap(object.assoc()));
+      }
+    }
+
+    return objects;
+  }
+
+  create(Object object) async {
+    final conn = await DBProvider.db.database;
+
+    var objectMap = object.toMap();
+
+    await conn?.execute("INSERT INTO `$table` (id,user_id,address_id,cost,description,building_type,forSale,main_img,more_img,created_at,updated_at) VALUES (${objectMap['id']}, '${objectMap['user_id']}', '${objectMap['address_id']}', '${objectMap['cost']}','${objectMap['description']}','${objectMap['object_type']}','${objectMap['building_type']}','${objectMap['forSale']}','${objectMap['main_img']}','${objectMap['more_img']}', '${objectMap['created_at']}', '${objectMap['updated_at']}')");
+  }
+
+  getObjectUser(int objectId) async {
+    final conn = await DBProvider.db.database;
+
+    var data = await conn?.execute('SELECT `user_profile`.first_name, `user_profile`.last_name, `user_profile`.description, `user_profile`.phone_number, `user_profile`.date_of_birth, `user_profile`.profile_image FROM `$table` INNER JOIN `user_profile` ON `$table`.user_id=`user_profile`.id WHERE `$table`.id="$objectId"');
+
+    if (data!.numOfRows > 0) {
+      return data.rows.first.assoc();
+    }
+
+    return Null;
   }
 }
