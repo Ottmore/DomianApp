@@ -1,5 +1,7 @@
+import 'dart:convert';
 import 'dart:ui';
 
+import 'package:crypto/crypto.dart';
 import 'package:domian/model/userProfile.dart';
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
@@ -40,7 +42,10 @@ class _LoginScreenState extends State<LoginScreen> {
       final user = Hive.box('user');
       final userProfile = Hive.box('user_profile');
 
-      Map<String, dynamic> authData = await AuthService().signIn(email, password);
+      var bytes = utf8.encode(password);
+      var hashedPassword = sha256.convert(bytes).toString();
+
+      Map<String, dynamic> authData = await AuthService().signIn(email, hashedPassword);
 
       print(authData);
 
