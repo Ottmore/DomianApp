@@ -18,7 +18,7 @@ class AppNavigationBar extends StatelessWidget {
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withOpacity(0.5),
-                offset: Offset(0, 6),
+                offset: const Offset(0, 6),
                 blurRadius: 15,
               ),
             ],
@@ -47,12 +47,12 @@ class AppNavigationBar extends StatelessWidget {
                   ),
                   Expanded(
                     child: IconButton(
-                      tooltip: 'Каталог',
+                      tooltip: 'Поиск',
                       icon: const Icon(Icons.search),
-                      color: route?.settings.name == '/register' ? Colors.redAccent : Colors.grey,
+                      color: route?.settings.name == '/search' ? Colors.redAccent : Colors.grey,
                       onPressed: () {
-                        if (route?.settings.name != '/register') {
-                           Navigator.pushNamed(context, '/register');
+                        if (route?.settings.name != '/search') {
+                           Navigator.pushNamed(context, '/search');
                         }
                       },
                     ),
