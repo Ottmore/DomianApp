@@ -55,4 +55,27 @@ class AddressModel extends BaseModel {
 
     return listAddress;
   }
+
+  getByIds(List<int> ids) async {
+    final conn = await DBProvider.db.database;
+
+    var data = await conn?.execute('SELECT * FROM `$table` WHERE id IN (${ids.join(',')})');
+    List<Address> objects = [];
+
+    if (data!.numOfRows > 0) {
+      for (var object in data.rows) {
+        objects.add(Address.fromMap(object.assoc()));
+      }
+    }
+
+    return objects;
+  }
+
+  create(Address address) async {
+    final conn = await DBProvider.db.database;
+
+    var addressMap = address.toMap();
+
+    await conn?.execute("INSERT INTO `$table` (id,city,address,house_number,flat_number) VALUES ('${addressMap['id']}', '${addressMap['user_id']}', '${addressMap['address_id']}', '${addressMap['cost']}','${addressMap['description']}')");
+  }
 }
