@@ -26,8 +26,14 @@ class BaseModel {
     await conn?.execute('DELETE FROM `$table` WHERE id=$id');
   }
 
-  update(int id, String column, value) async {
+  update(int id, Map<String, dynamic> columns, {columnId = 'id'}) async {
+    List<String> stringColumns = [];
+
+    for (var column in columns.entries) {
+      stringColumns.add('${column.key}="${column.value}"');
+    }
+
     final conn = await DBProvider.db.database;
-    await conn?.execute('UPDATE `$table` SET $column=$value WHERE id=$id');
+    await conn?.execute('UPDATE `$table` SET ${stringColumns.join(', ')} WHERE $columnId=$id');
   }
 }
