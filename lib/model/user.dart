@@ -33,7 +33,7 @@ class User extends HiveObject {
       id: data['id'] == null ? null : int.parse(data['id']),
       email: data['email'],
       password: data['password'],
-      is_agent: data['is_agent'] == 1 ? true : false,
+      is_agent: int.parse(data['is_agent']) == 1 ? true : false,
       created_at: DateTime.parse(data['created_at']),
       updated_at: DateTime.parse(data['updated_at']),
     );
