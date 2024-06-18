@@ -1,7 +1,7 @@
 import 'dart:io';
+import 'package:android_intent_plus/android_intent.dart';
 import 'package:domian/model/object.dart';
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:domian/constants/constants.dart';
 
 class BottomButtons extends StatefulWidget {
@@ -19,24 +19,48 @@ class _BottomButtons extends State<BottomButtons> {
   String phoneNumber = '';
 
   _launchWhatsapp() async {
-    var whatsappAndroid =Uri.parse("whatsapp://send?phone=$phoneNumber&text=hello");
-    if (await canLaunchUrl(whatsappAndroid)) {
-      await launchUrl(whatsappAndroid);
+    if (Platform.isAndroid) {
+      final intent = AndroidIntent(
+        action: 'action_view',
+        data: 'whatsapp://send?phone=$phoneNumber&text=hello',
+        package: 'com.whatsapp',
+      );
+      await intent.launch().catchError((error) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("WhatsApp is not installed on the device"),
+          ),
+        );
+      });
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text("WhatsApp is not installed on the device"),
+          content: Text("WhatsApp is not supported on this platform"),
         ),
       );
     }
   }
 
   _launchCaller() async {
-    final phoneUrl = Uri.parse("tel:$phoneNumber");
-    if (await canLaunchUrl(phoneUrl)) {
-      await launchUrl(phoneUrl);
+    if (Platform.isAndroid) {
+      final intent = AndroidIntent(
+        action: 'action_view',
+        data: 'whatsapp://call?phone=$phoneNumber',
+        package: 'com.whatsapp',
+      );
+      await intent.launch().catchError((error) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Could not make a WhatsApp call. WhatsApp might not be installed."),
+          ),
+        );
+      });
     } else {
-      print("Could not make a phone call");
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("WhatsApp calling is not supported on this platform"),
+        ),
+      );
     }
   }
 
@@ -60,7 +84,6 @@ class _BottomButtons extends State<BottomButtons> {
   @override
   Widget build(BuildContext context) {
     Size size = MediaQuery.of(context).size;
-
     if (_isLoading) {
       return const CircularProgressIndicator();
     } else {

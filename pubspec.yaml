@@ -21,8 +21,8 @@ dependencies:
   flutter_dotenv: ^5.1.0
   dartssh2: ^2.8.2
   image_picker: ^1.1.1
-  url_launcher: ^6.1.2
   crypto: ^3.0.3
+  android_intent_plus: ^5.0.2
 dev_dependencies:
   flutter_test:
     sdk: flutter

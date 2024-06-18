@@ -3,9 +3,11 @@ import 'package:domian/model/userProfile.dart';
 import 'package:domian/services/auth_service.dart';
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:crypto/crypto.dart';
 import 'dart:convert';
+import 'dart:io';
+import 'package:android_intent_plus/android_intent.dart';
+import 'package:android_intent_plus/flag.dart';
 
 class RegistrationScreen extends StatefulWidget {
   const RegistrationScreen({super.key});
@@ -83,10 +85,22 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
   _launchURL() async {
     const url = 'https://normativ.kontur.ru/document?moduleId=1&documentId=447363';
     final uri = Uri.parse(url);
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri);
+
+    if (Platform.isAndroid) {
+      final intent = AndroidIntent(
+        action: 'action_view',
+        data: uri.toString(),
+        package: 'com.android.chrome', // specifying a browser package
+      );
+      await intent.launch().catchError((error) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not launch $url')),
+        );
+      });
     } else {
-      throw 'Could not launch $url';
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('URL launching is not supported on this platform')),
+      );
     }
   }
 
@@ -284,8 +298,8 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                     child: ElevatedButton(
                       onPressed: _register,
                       style: ButtonStyle(
-                        backgroundColor: WidgetStateProperty.all<Color>(Colors.redAccent),
-                        shape: WidgetStateProperty.all<RoundedRectangleBorder>(
+                        backgroundColor: MaterialStateProperty.all<Color>(Colors.redAccent),
+                        shape: MaterialStateProperty.all<RoundedRectangleBorder>(
                           RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
